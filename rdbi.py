@@ -331,6 +331,13 @@ if __name__ == "__main__":
                 print(f"    Hex: {actual_data.hex().upper()}")
                 print(f"    ASCII: {ascii_val}")
 
+                user_answer = input("press \"q\" to exit, press enter to go on")
+                if user_answer == "q":
+                    exit()
+                else:
+                    continue
+
+
 
 
                 # if "CTF" in ascii_val or "flag" in ascii_val:
