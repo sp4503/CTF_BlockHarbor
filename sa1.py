@@ -257,29 +257,69 @@ if __name__ == "__main__":
 
     send_can_message(bus, REQ_ID, "02 27 01 00 00 00 00 00")
     print("requested seed for lv 1")
-    res_01 = receive_response_return_hex(bus, RES_ID, 200)
-    if res_01[3:5] == "67":
-        print("got seed successfully")
-        seed_str = res_01[9:]
-        print(f'seed : \"{seed_str}\"')
 
-        seed_byte = bytes.fromhex(seed_str.replace(" ", ""))
-        seed_int = int.from_bytes(seed_byte, byteorder='big')
-
-        for i in range(0x00, 0xFF):
+    res_01 = receive_response_return_byte(bus, RES_ID, 200)
+    
+    if res_01:
+        if res_01[1] == 0x67: #positive + single frame
+            res_01_byte = res_01
+            res_01_hex = res_01.hex(' ').upper()
+            seed_byte = res_01_byte[3:7]
+            seed_hex = seed_byte.hex(' ').upper()
+            print("Got Seed Successfully_by single frame")
+            print(f'Response for Requesting Seed : \"{res_01_hex}\"')
+            print(f'seed : \"{seed_hex}\"')
+        elif res_01[0] == 0x00 and res_01[3] == 0x67:
+            res_01_byte = res_01
+            res_01_hex = res_01.hex(' ').upper()
+            seed_byte = res_01_byte[5:9]
+            seed_hex = seed_byte.hex(' ').upper()
+            print("Got Seed Successfully_by single frame")
+            print(f'Response for Requesting Seed : \"{res_01_hex}\"')
+            print(f'seed : \"{seed_hex}\"')
+        else:
+            print("what kind of frame did i get?")
+        
+    if res_01_byte:
+        for i in range(0x00, 0x100):
             cipher = singleByteTransform(i, 4)
             
-            xor_ret = seed_int ^ cipher
+            seed_int = int.from_bytes(seed_byte, byteorder='big')
             
-            xor_ret_byte = xor_ret.to_bytes(4, byteorder='big')
+            xor_ret_int = seed_int ^ cipher
+
+            xor_ret_byte = xor_ret_int.to_bytes(4, byteorder='big')
             xor_ret_hex = xor_ret_byte.hex(' ').upper()
 
             send_can_message(bus, REQ_ID, f'07 27 02 {xor_ret_hex} 00')
-            sa_ret = receive_response_return_byte(bus, RES_ID, 200)
-            if sa_ret:
-                if sa_ret[1] == 0x67:
-                    print("SA lv 1 unlocked!!")
-                    data_byte = sa_ret[3:]
-                    data_hex = sa_ret.hex(' ').upper()
-                    print(data_hex)
+            
+            saRet = receive_response_return_byte(bus, RES_ID, 200)
+
+            if saRet:
+                if saRet[1] == 0x67:
+                    #sa unlock 성공 + single frame
+                    data = saRet[3:]
+                    data_hex = data.hex(' ').upper()
+                    print("sa lv 1 unlock succedded")
+                    print(f'data : {data_hex}')
+                    data_ascii = print_as_ascii(data)
+
+                elif saRet[0] == 0x00 and saRet[3] == 0x67:
+                    # sa unlock 성공 + CF
+                    data = saRet[5:]
+                    data_hex = data.hex(' ').upper()
+                    print("sa lv 1 unlock succedded")
+                    print(f'data : {data_hex}')
+                    data_ascii = print_as_ascii(data)
+
+            else: # 메세지 응답 없음
+                print("no message from ECU")
+
+
+            
+
+
+    else:
+        print("Negative response for Requesting Seed")
+        exit()
     
