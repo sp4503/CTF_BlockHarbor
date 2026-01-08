@@ -13,7 +13,7 @@ CAN_CHANNEL = 'vcan0'  # 실제 장치는 'can0', 테스트는 'vcan0'
 CAN_BITRATE = 500000
 
 # 메시지 설정
-REQ_ID = 0x7E0    # 송신 ID (예: OBD-II Functional Request)
+REQ_ID = 0x7DF    # 송신 ID (예: OBD-II Functional Request)
 RES_ID = 0x7E8    # 수신 대기할 특정 ID (예: ECU Response)
 
 # --- [MODULES] ---
