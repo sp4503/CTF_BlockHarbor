@@ -189,7 +189,7 @@ def print_as_ascii(data):
         # printable한 문자만 남기는 처리가 실무에서 유용합니다.
         ascii_str = "".join([chr(b) if 32 <= b <= 126 else "." for b in data])
         
-        print(f"[ASCII] Decoded: \"{ascii_str}\"")
+        print(f"[ASCII] Decoded: \n{ascii_str}")
         return ascii_str
     except Exception as e:
         print(f"[ERROR] ASCII conversion failed: {e}")
@@ -248,20 +248,27 @@ def singleByteTransform(source, byteLen):
 
 
 
-
+exe_rmba_data = b''
 #############################################################################
 def exe_rmba(addr_byte):
+    global exe_rmba_data
     addr_hex = addr_byte.hex(' ').upper()
     send_can_message(bus, REQ_ID, f"07 23 14 {addr_hex} FF")
     print(f"rmba req sent! (address : {addr_hex})")
 
     rmba_res = receive_response_return_byte(bus, RES_ID, 200)
-    rmba_res_hex = rmba_res.hex(' ').upper()
-    print(f'response = {rmba_res_hex}')
+    if rmba_res == None:
+        print("Rmba rejected")
+        
+    else:
+        exe_rmba_data += rmba_res
+        rmba_res_hex = rmba_res.hex(' ').upper()
+        print(f'response = \n{rmba_res_hex}')
+        print_as_ascii(rmba_res)
 
 
-    user_ans = input("1. go / else. stop")
-    return user_ans
+        user_ans = input("1. go / else. stop")
+        return user_ans
 
 
 
@@ -334,7 +341,7 @@ if __name__ == "__main__":
                 print("no message from ECU")
                 sa1_flag = 0
 
-    start_addr_int = 3237994496
+    start_addr_int = 0x00400000
     start_addr_byte = start_addr_int.to_bytes(4, byteorder='big')
     start_addr_hex = start_addr_byte.hex(' ').upper()
 
@@ -350,7 +357,10 @@ if __name__ == "__main__":
             else:
                 break
 
-
+    if exe_rmba_data:
+        with open("firmware.bin", "wb") as f: # 바이너리 쓰기 모드
+            f.write(exe_rmba_data)
+        print(f"[SUCCESS] Saved {len(exe_rmba_data)} bytes to firmware.bin")
             
 
 
