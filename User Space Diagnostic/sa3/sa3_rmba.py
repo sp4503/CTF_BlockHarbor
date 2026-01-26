@@ -341,6 +341,10 @@ if __name__ == "__main__":
                 print("no message from ECU")
                 sa1_flag = 0
 
+
+#####################################################################
+#####################################################################
+
     start_addr_int = 0x00400000
     start_addr_byte = start_addr_int.to_bytes(4, byteorder='big')
     start_addr_hex = start_addr_byte.hex(' ').upper()
